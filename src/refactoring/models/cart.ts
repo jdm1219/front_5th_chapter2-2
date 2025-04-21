@@ -1,28 +1,80 @@
 import { CartItem, Coupon } from "../../types";
+import { clamp } from "../utils/pureFunctions.ts";
+
+const calculateItemTotalBeforeDiscount = (item: CartItem) => {
+  return item.product.price * item.quantity;
+};
 
 export const calculateItemTotal = (item: CartItem) => {
-  return 0;
+  return (
+    calculateItemTotalBeforeDiscount(item) *
+    (1 - getMaxApplicableDiscount(item))
+  );
 };
 
 export const getMaxApplicableDiscount = (item: CartItem) => {
-  return 0;
+  const { discounts } = item.product;
+  const { quantity } = item;
+  return discounts.reduce(
+    (max, discount) =>
+      quantity >= discount.quantity ? Math.max(max, discount.rate) : max,
+    0,
+  );
+};
+
+const calculateAfterDiscountCoupon = (
+  totalBeforeDiscount: number,
+  selectedCoupon: Coupon,
+) => {
+  if (selectedCoupon.discountType === "amount") {
+    return totalBeforeDiscount - selectedCoupon.discountValue;
+  }
+  if (selectedCoupon.discountType === "percentage") {
+    return (totalBeforeDiscount * (100 - selectedCoupon.discountValue)) / 100;
+  }
+  return totalBeforeDiscount;
 };
 
 export const calculateCartTotal = (
   cart: CartItem[],
-  selectedCoupon: Coupon | null
+  selectedCoupon: Coupon | null,
 ) => {
+  const totalBeforeDiscount = cart.reduce(
+    (sum, cartItem) => calculateItemTotalBeforeDiscount(cartItem) + sum,
+    0,
+  );
+
+  const totalAfterItemDiscount = cart.reduce(
+    (sum, cartItem) => calculateItemTotal(cartItem) + sum,
+    0,
+  );
+
+  const totalAfterDiscount = selectedCoupon
+    ? calculateAfterDiscountCoupon(totalAfterItemDiscount, selectedCoupon)
+    : totalAfterItemDiscount;
+
+  const totalDiscount = totalBeforeDiscount - totalAfterDiscount;
+
   return {
-    totalBeforeDiscount: 0,
-    totalAfterDiscount: 0,
-    totalDiscount: 0,
+    totalBeforeDiscount,
+    totalAfterDiscount,
+    totalDiscount,
   };
 };
 
 export const updateCartItemQuantity = (
   cart: CartItem[],
   productId: string,
-  newQuantity: number
+  newQuantity: number,
 ): CartItem[] => {
-  return [];
+  return cart
+    .map((cartItem) =>
+      cartItem.product.id === productId
+        ? {
+            ...cartItem,
+            quantity: clamp(newQuantity, 0, cartItem.product.stock),
+          }
+        : cartItem,
+    )
+    .filter((cartItem) => cartItem.quantity);
 };
