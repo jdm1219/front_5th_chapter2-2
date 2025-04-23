@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { describe, expect, test } from "vitest";
 import {
   act,
@@ -8,11 +7,13 @@ import {
   screen,
   within,
 } from "@testing-library/react";
-import { CartPage } from "../../refactoring/components/CartPage";
-import { AdminPage } from "../../refactoring/components/AdminPage";
+import { CartPage } from "../../refactoring/views/CartPage.tsx";
+import { AdminPage } from "../../refactoring/views/AdminPage.tsx";
 import { CartItem, Coupon, Product } from "../../types";
 import { useCart, useCoupons, useProducts } from "../../refactoring/hooks";
 import * as cartUtils from "../../refactoring/models/cart";
+import { ProductProvider } from "../../refactoring/provider/ProductProvider.tsx";
+import { CouponProvider } from "../../refactoring/provider/CouponProvider.tsx";
 
 const mockProducts: Product[] = [
   {
@@ -52,39 +53,16 @@ const mockCoupons: Coupon[] = [
   },
 ];
 
-const TestAdminPage = () => {
-  const [products, setProducts] = useState<Product[]>(mockProducts);
-  const [coupons, setCoupons] = useState<Coupon[]>(mockCoupons);
-
-  const handleProductUpdate = (updatedProduct: Product) => {
-    setProducts((prevProducts) =>
-      prevProducts.map((p) => (p.id === updatedProduct.id ? updatedProduct : p))
-    );
-  };
-
-  const handleProductAdd = (newProduct: Product) => {
-    setProducts((prevProducts) => [...prevProducts, newProduct]);
-  };
-
-  const handleCouponAdd = (newCoupon: Coupon) => {
-    setCoupons((prevCoupons) => [...prevCoupons, newCoupon]);
-  };
-
-  return (
-    <AdminPage
-      products={products}
-      coupons={coupons}
-      onProductUpdate={handleProductUpdate}
-      onProductAdd={handleProductAdd}
-      onCouponAdd={handleCouponAdd}
-    />
-  );
-};
-
 describe("basic > ", () => {
   describe("시나리오 테스트 > ", () => {
     test("장바구니 페이지 테스트 > ", async () => {
-      render(<CartPage products={mockProducts} coupons={mockCoupons} />);
+      render(
+        <ProductProvider initialProducts={mockProducts}>
+          <CouponProvider initialCoupons={mockCoupons}>
+            <CartPage />
+          </CouponProvider>
+        </ProductProvider>,
+      );
       const product1 = screen.getByTestId("product-p1");
       const product2 = screen.getByTestId("product-p2");
       const product3 = screen.getByTestId("product-p3");
@@ -164,7 +142,13 @@ describe("basic > ", () => {
     });
 
     test("관리자 페이지 테스트 > ", async () => {
-      render(<TestAdminPage />);
+      render(
+        <ProductProvider initialProducts={mockProducts}>
+          <CouponProvider initialCoupons={mockCoupons}>
+            <AdminPage />
+          </CouponProvider>
+        </ProductProvider>,
+      );
 
       const $product1 = screen.getByTestId("product-1");
 
@@ -228,24 +212,24 @@ describe("basic > ", () => {
       fireEvent.click(screen.getByText("할인 추가"));
 
       expect(
-        screen.queryByText("5개 이상 구매 시 5% 할인")
+        screen.queryByText("5개 이상 구매 시 5% 할인"),
       ).toBeInTheDocument();
 
       // 할인 삭제
       fireEvent.click(screen.getAllByText("삭제")[0]);
       expect(
-        screen.queryByText("10개 이상 구매 시 10% 할인")
+        screen.queryByText("10개 이상 구매 시 10% 할인"),
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByText("5개 이상 구매 시 5% 할인")
+        screen.queryByText("5개 이상 구매 시 5% 할인"),
       ).toBeInTheDocument();
 
       fireEvent.click(screen.getAllByText("삭제")[0]);
       expect(
-        screen.queryByText("10개 이상 구매 시 10% 할인")
+        screen.queryByText("10개 이상 구매 시 10% 할인"),
       ).not.toBeInTheDocument();
       expect(
-        screen.queryByText("5개 이상 구매 시 5% 할인")
+        screen.queryByText("5개 이상 구매 시 5% 할인"),
       ).not.toBeInTheDocument();
 
       // 4. 쿠폰 추가

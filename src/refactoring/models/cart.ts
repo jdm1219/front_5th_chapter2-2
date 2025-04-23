@@ -1,5 +1,5 @@
 import { CartItem, Coupon } from "../../types";
-import { clamp } from "../utils/pureFunctions.ts";
+import { clamp } from "../utils/number.ts";
 
 const calculateItemTotalBeforeDiscount = (item: CartItem) => {
   return item.product.price * item.quantity;
