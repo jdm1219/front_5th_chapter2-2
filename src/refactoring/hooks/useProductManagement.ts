@@ -1,4 +1,3 @@
-import { useProductContext } from "../provider/ProductProvider.tsx";
 import { useState } from "react";
 import { Product } from "../../types.ts";
 
@@ -10,7 +9,6 @@ const initialNewProduct = {
 };
 
 export const useProductManagement = () => {
-  const { addProduct } = useProductContext();
   const [newProduct, setNewProduct] = useState<Omit<Product, "id">>({
     ...initialNewProduct,
   });
@@ -26,18 +24,12 @@ export const useProductManagement = () => {
     setShowNewProductForm((prev) => !prev);
   };
 
-  const handleAddNewProduct = () => {
-    const productWithId = { ...newProduct, id: Date.now().toString() };
-    addProduct(productWithId);
-    setInitialNewProduct();
-    setShowNewProductForm(false);
-  };
-
   return {
     newProduct,
     setNewProduct,
     showNewProductForm,
+    setShowNewProductForm,
     toggleNewProductForm,
-    handleAddNewProduct,
+    setInitialNewProduct,
   };
 };

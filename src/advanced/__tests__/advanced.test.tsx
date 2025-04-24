@@ -1,8 +1,18 @@
 import { describe, expect, test } from "vitest";
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  within,
+} from "@testing-library/react";
 import { CartPage } from "../../refactoring/views/CartPage.tsx";
 import { AdminPage } from "../../refactoring/views/AdminPage.tsx";
 import { Coupon, Product } from "../../types";
+import { useProductManagement } from "../../refactoring/hooks";
+import { clamp } from "../../refactoring/utils/number.ts";
+import { formatNumber } from "../../refactoring/utils/string.ts";
 import { ProductProvider } from "../../refactoring/provider/ProductProvider.tsx";
 import { CouponProvider } from "../../refactoring/provider/CouponProvider.tsx";
 
@@ -245,13 +255,113 @@ describe("advanced > ", () => {
     });
   });
 
-  describe("자유롭게 작성해보세요.", () => {
-    test("새로운 유틸 함수를 만든 후에 테스트 코드를 작성해서 실행해보세요", () => {
-      expect(true).toBe(false);
+  describe("utils", () => {
+    describe("clamp", () => {
+      test("값이 최소값과 최대값 사이면 원값을 반환한다", () => {
+        expect(clamp(5, 1, 10)).toBe(5);
+      });
+
+      test("값이 최소값보다 작을 때 최소값을 반환한다", () => {
+        expect(clamp(-5, 0, 10)).toBe(0);
+      });
+
+      test("값이 최대값보다 클 때 최대값을 반환한다", () => {
+        expect(clamp(15, 0, 10)).toBe(10);
+      });
+
+      test("min이 null인 경우 정상적으로 처리한다", () => {
+        expect(clamp(5, null, 10)).toBe(5);
+        expect(clamp(15, null, 10)).toBe(10);
+      });
+
+      test("max가 null인 경우 정상적으로 처리한다", () => {
+        expect(clamp(5, 0, null)).toBe(5);
+        expect(clamp(-5, 0, null)).toBe(0);
+      });
+
+      test("min과 max가 모두 null인 경우 원값을 반환한다", () => {
+        expect(clamp(5, null, null)).toBe(5);
+      });
     });
 
-    test("새로운 hook 함수르 만든 후에 테스트 코드를 작성해서 실행해보세요", () => {
-      expect(true).toBe(false);
+    describe("formatNumber", () => {
+      test("숫자를 3자리마다 쉼표를 넣어 포맷한다", () => {
+        expect(formatNumber(1000)).toBe("1,000");
+        expect(formatNumber(123456789)).toBe("123,456,789");
+      });
+
+      test("문자열로 된 숫자도 포맷한다", () => {
+        expect(formatNumber("10000")).toBe("10,000");
+        expect(formatNumber("102345000")).toBe("102,345,000");
+      });
+
+      test("앞에 0이 들어노는 문자열도 올바르게 숫자로 포맷한다", () => {
+        expect(formatNumber("00022223")).toBe("22,223");
+      });
+
+      test("숫자가 아닌 문자열은 원값을 반환한다", () => {
+        expect(formatNumber("abc")).toBe("abc");
+        expect(formatNumber("abc123")).toBe("abc123");
+        expect(formatNumber("234abc123")).toBe("234abc123");
+      });
+
+      test("빈 문자열은 그대로 반환한다", () => {
+        expect(formatNumber("")).toBe("");
+      });
+    });
+  });
+
+  describe("useProductManagement > ", () => {
+    test("toggleNewProductForm으로 입력 폼이 토글된다", () => {
+      const { result } = renderHook(() => useProductManagement());
+
+      expect(result.current.showNewProductForm).toBe(false);
+      act(() => {
+        result.current.toggleNewProductForm();
+      });
+      expect(result.current.showNewProductForm).toBe(true);
+    });
+
+    test("입력된 값으로 새로운 상품의 속성값이 변한다", () => {
+      const { result } = renderHook(() => useProductManagement());
+      const newProduct: Product = {
+        id: "2",
+        name: "New Product",
+        price: 200,
+        stock: 5,
+        discounts: [],
+      };
+      act(() => {
+        result.current.setNewProduct(newProduct);
+      });
+      expect(result.current.newProduct).toEqual(newProduct);
+    });
+
+    test("입력된 값을 초기화 할 수 있다", () => {
+      const { result } = renderHook(() => useProductManagement());
+      const initialNewProduct = {
+        name: "",
+        price: 0,
+        stock: 0,
+        discounts: [],
+      };
+      const newProduct: Product = {
+        id: "2",
+        name: "New Product",
+        price: 200,
+        stock: 5,
+        discounts: [],
+      };
+
+      act(() => {
+        result.current.setNewProduct(newProduct);
+      });
+      expect(result.current.newProduct).toEqual(newProduct);
+
+      act(() => {
+        result.current.setInitialNewProduct();
+      });
+      expect(result.current.newProduct).toEqual(initialNewProduct);
     });
   });
 });

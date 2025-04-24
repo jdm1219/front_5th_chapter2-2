@@ -1,14 +1,17 @@
 import ProductItemList from "./ProductItemList.tsx";
-import { useProductManagement } from "../../hooks/useProductManagement.ts";
+import { useProductManagement } from "../../hooks";
 import { ChangeEvent } from "react";
+import { useProductContext } from "../../provider/ProductProvider.tsx";
 
 export const ProductManagement = () => {
+  const { addProduct } = useProductContext();
   const {
     newProduct,
     setNewProduct,
     showNewProductForm,
+    setShowNewProductForm,
     toggleNewProductForm,
-    handleAddNewProduct,
+    setInitialNewProduct,
   } = useProductManagement();
 
   const handleNameUpdate = (e: ChangeEvent<HTMLInputElement>) => {
@@ -25,6 +28,13 @@ export const ProductManagement = () => {
   const handleStockUpdate = (e: ChangeEvent<HTMLInputElement>) => {
     const stock = Number(e.target.value);
     setNewProduct({ ...newProduct, stock });
+  };
+
+  const handleAddNewProduct = () => {
+    const productWithId = { ...newProduct, id: Date.now().toString() };
+    addProduct(productWithId);
+    setInitialNewProduct();
+    setShowNewProductForm(false);
   };
 
   return (
